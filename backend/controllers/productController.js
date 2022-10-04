@@ -14,6 +14,7 @@ const ApiFeatures = require('../utils/apiFeatures');
 // @desc    Create new product
 // @route   POST /api/v1/admin/product/new\
 exports.createProduct = catchAsyncErrors( async (req, res,next) => {
+    req.body.user = req.user.id;
     
     const product = await Product.create(req.body);
 
@@ -29,31 +30,33 @@ exports.createProduct = catchAsyncErrors( async (req, res,next) => {
 
 // @desc    Get all products
 // @route   GET /api/v1/products
-
-exports.getAllProducts =catchAsyncErrors( async (req, res,next) => {
-    
-    const resultPerPage = 5;
-    const productCount = await Product.countDocuments();
-    const apiFeatures = new ApiFeatures(Product.find(), req.query)
-        .search()
-        .filter();
-    let products = await apiFeatures.query;
-
+// Get All Product
+exports.getAllProducts = catchAsyncErrors(async (req, res, next) => {
+    const resultPerPage = 8;
+    const productsCount = await Product.countDocuments();
+  
+    const apiFeature = new ApiFeatures(Product.find(), req.query)
+      .search()
+      .filter()
+      .pagination(resultPerPage);
+  
+    let products = await apiFeature.query.clone();
+  
     let filteredProductsCount = products.length;
-      
-    apiFeatures.pagination(resultPerPage);
-    
+  
+    apiFeature.pagination(resultPerPage);
+  
+    products = await apiFeature.query.clone();
+  
     res.status(200).json({
-        success: true,
-        products,
-        productCount,
-        resultPerPage,
-        filteredProductsCount,
-    
-
-    })
-})
-
+      success: true,
+      products,
+      productsCount,
+      resultPerPage,
+      filteredProductsCount,
+    });
+  });
+  
 // @desc    Update product
 // @route   PUT /api/v1/admin/product/:id
 exports.updateProduct = catchAsyncErrors(async (req, res,next) => {
@@ -106,3 +109,44 @@ exports.getSingleProduct = async (req, res,next) => {
         product
     })
 }
+//@desc product review and update review
+exports.createProductReview = catchAsyncErrors(async (req, res, next) => {
+    const { rating, comment, productId } = req.body;
+  
+    const review = {
+      user: req.user._id,
+      name: req.user.name,
+      rating:Number(rating),
+      comment,
+  
+    };
+  
+    const product = await Product.findById(productId);
+  
+    const isReviewed = product.reviews.find(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+  
+    if (isReviewed) {
+      product.reviews.forEach((review) => {
+        if (review.user.toString() === req.user._id.toString()) {
+          review.comment = comment;
+          review.rating = rating;
+        }
+      });
+    } else {
+      product.reviews.push(review);
+      product.numOfReviews = product.reviews.length;
+    }
+  
+    product.ratings =
+      product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+      product.reviews.length;
+  
+    await product.save({ validateBeforeSave: false });
+  
+    res.status(200).json({
+      success: true,
+    });
+  }
+  );

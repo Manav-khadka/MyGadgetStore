@@ -3,6 +3,10 @@ const app = express();
 
 const errorMiddleware = require('./middleware/error');
 
+const cookie = require('cookie-parser');
+
+app.use(cookie());
+
 app.use(express.json());
 //route  imports
 
