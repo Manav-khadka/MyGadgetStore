@@ -1,11 +1,26 @@
 import "./App.css";
-import React from "react";
 import Header from "./component/layout/Header/Header.js";
 import { BrowserRouter as Router } from "react-router-dom";
+import WebFont from "webfontloader";
+import React from "react";
+import Footer  from "./component/layout/Footer/Footer.js";
+
+
+
 
 function App() {
+  
+React.useEffect(() => {
+
+  WebFont.load({
+    google: {
+      families: ["Roboto:300,400,500,700", "sans-serif"],
+    },
+  });
+}, []);
   return <Router> 
     <Header />
+    <Footer />
   </Router>;
 }
 
